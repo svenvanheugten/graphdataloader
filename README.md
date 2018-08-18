@@ -4,9 +4,13 @@ This gives DataLoader a natural place in your object graph. It is based on [aiod
 
 Example
 -------
-Suppose you have a `Blog`-class and an `Author`-class. For modularity, each have their own property resolvers. However, when you request a blog's author, the API call doesn't just return the `id`, but also some other information, which you don't want to go to waste. So you do this:
+Suppose you have a `Blog`-class and an `Author`-class. For modularity, each have their own property resolvers. However, when you request a blog's author, the API call doesn't just return the `id`, but also some other information, which you don't want going to waste. So you do this:
 
 ```python
+from graphdataloader import resolver
+from external import get_blogs, get_authors
+
+
 class Blog:
     def __init__(self, id):
         self.id = id
@@ -59,4 +63,4 @@ class Author:
         return hash(self.id)
 ```
 
-Now, resolving a `Blog`'s author and then resolving the author's name does just one request! Only if you also resolve the author's rating, a second request goes out.
+Now, getting a `Blog`'s author and then getting the author's name does just one request. Only if you also get the author's rating, a second request goes out.

@@ -12,7 +12,9 @@ def resolver(batch_load_fn_retriever=lambda cls: cls.batch_load_fn):
         def __get__(self, obj, objtype):
             if obj is None:
                 return self
+
             batch_load_fn = batch_load_fn_retriever(obj.__class__)
+
             if not hasattr(objtype, '_queues'):
                 objtype._queues = {}
             if batch_load_fn not in objtype._queues:
@@ -45,7 +47,9 @@ def resolver(batch_load_fn_retriever=lambda cls: cls.batch_load_fn):
                             dispatch_queue()
                         )
                 return self.__futures[obj]
+
             fn.resolve = resolve
+
             return fn
 
         def __repr__(self):
