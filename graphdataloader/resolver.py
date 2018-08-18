@@ -1,7 +1,7 @@
 from asyncio import get_event_loop, ensure_future
 
 
-def resolver(batch_load_fn_retriever):
+def resolver(batch_load_fn_retriever=lambda cls: cls.batch_load_fn):
     class Descriptor:
         def __init__(self):
             self.__futures = {}

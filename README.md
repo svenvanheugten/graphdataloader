@@ -11,8 +11,8 @@ class Blog:
     def __init__(self, id):
         self.id = id
 
-    title = resolver(lambda cls: cls.batch_load_fn)
-    author = resolver(lambda cls: cls.batch_load_fn)
+    title = resolver()
+    author = resolver()
 
     @classmethod
     async def batch_load_fn(cls, obj_to_attr_names):
@@ -41,8 +41,8 @@ class Author:
     def __init__(self, id):
         self.id = id
 
-    name = resolver(lambda cls: cls.batch_load_fn)
-    rating = resolver(lambda cls: cls.batch_load_fn)
+    name = resolver()
+    rating = resolver()
 
     @classmethod
     async def batch_load_fn(cls, obj_to_attr_names):
