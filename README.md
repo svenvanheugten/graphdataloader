@@ -11,24 +11,24 @@ class Blog:
     def __init__(self, id):
         self.id = id
 
-    resolve_title = resolver(lambda cls: cls.batch_load_fn)
-    resolve_author = resolver(lambda cls: cls.batch_load_fn)
+    title = resolver(lambda cls: cls.batch_load_fn)
+    author = resolver(lambda cls: cls.batch_load_fn)
 
     @classmethod
-    async def batch_load_fn(cls, obj_to_resolver_names):
+    async def batch_load_fn(cls, obj_to_attr_names):
         documents = await get_blogs(
-            {obj.id for obj in obj_to_resolver_names},
-            include_titles=any('resolve_title' in resolver_names for resolver_names in obj_to_resolver_names.values()),
-            include_authors=any('resolve_author' in resolver_names for resolver_names in obj_to_resolver_names.values())
+            {obj.id for obj in obj_to_attr_names},
+            include_titles=any('title' in attr_names for attr_names in obj_to_attr_names.values()),
+            include_authors=any('author' in attr_names for attr_names in obj_to_attr_names.values())
         )
         for document in documents:
             blog = cls(document['id'])
             if 'title' in document:
-                blog.resolve_title.give(document['title'])
+                blog.title.resolve(document['title'])
             if 'author' in document:
                 author = Author(document['author']['id'])
-                author.resolve_name.give(document['author']['name'])
-                blog.resolve_author.give(author)
+                author.name.resolve(document['author']['name'])
+                blog.author.resolve(author)
 
     def __eq__(self, other):
         return self.id == other.id
@@ -41,16 +41,16 @@ class Author:
     def __init__(self, id):
         self.id = id
 
-    resolve_name = resolver(lambda cls: cls.batch_load_fn)
-    resolve_rating = resolver(lambda cls: cls.batch_load_fn)
+    name = resolver(lambda cls: cls.batch_load_fn)
+    rating = resolver(lambda cls: cls.batch_load_fn)
 
     @classmethod
-    async def batch_load_fn(cls, obj_to_resolver_names):
-        documents = await get_authors({obj.id for obj in obj_to_resolver_names})
+    async def batch_load_fn(cls, obj_to_attr_names):
+        documents = await get_authors({obj.id for obj in obj_to_attr_names})
         for document in documents:
             author = cls(document['id'])
-            author.resolve_name.give(document['name'])
-            author.resolve_rating.give(document['rating'])
+            author.name.resolve(document['name'])
+            author.rating.resolve(document['rating'])
 
     def __eq__(self, other):
         return self.id == other.id

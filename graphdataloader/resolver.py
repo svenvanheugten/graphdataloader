@@ -1,5 +1,4 @@
 from asyncio import get_event_loop, ensure_future
-from itertools import groupby
 
 
 def resolver(batch_load_fn_retriever):
@@ -19,11 +18,13 @@ def resolver(batch_load_fn_retriever):
             if batch_load_fn not in objtype._queues:
                 objtype._queues[batch_load_fn] = {}
             queue = objtype._queues[batch_load_fn]
+
             async def dispatch_queue():
                 old_queue = dict(queue)
                 queue.clear()
                 await batch_load_fn(old_queue)
-            def give(value):
+
+            def resolve(value):
                 if obj not in self.__futures:
                     self.__futures[obj] = get_event_loop().create_future()
                 future = self.__futures[obj]
@@ -32,15 +33,19 @@ def resolver(batch_load_fn_retriever):
                         future.set_exception(value)
                     else:
                         future.set_result(value)
+
             def fn(*args, **kwargs):
                 queue_was_empty = len(queue) == 0
                 if obj not in self.__futures:
                     self.__futures[obj] = get_event_loop().create_future()
                     queue.setdefault(obj, set()).add(self.name)
                     if queue_was_empty:
-                        get_event_loop().call_soon(ensure_future, dispatch_queue())
+                        get_event_loop().call_soon(
+                            ensure_future,
+                            dispatch_queue()
+                        )
                 return self.__futures[obj]
-            fn.give = give
+            fn.resolve = resolve
             return fn
 
         def __repr__(self):
