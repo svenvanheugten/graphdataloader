@@ -1,7 +1,7 @@
 import asynctest
 import asyncio
 
-from graphdataloader import resolver
+from graphdataloader import Resolver
 
 
 class TestResolver(asynctest.TestCase):
@@ -12,8 +12,8 @@ class TestResolver(asynctest.TestCase):
             def __init__(self, id):
                 self.id = id
 
-            name = resolver(lambda cls: cls.batch_load_fn)
-            description = resolver(lambda cls: cls.batch_load_fn)
+            name = Resolver(lambda cls: cls.batch_load_fn)
+            description = Resolver(lambda cls: cls.batch_load_fn)
 
             @classmethod
             async def batch_load_fn(cls, obj_to_attr_names):

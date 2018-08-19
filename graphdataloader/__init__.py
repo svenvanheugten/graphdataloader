@@ -1,4 +1,4 @@
-from .resolver import resolver
+from .resolver import Resolver
 
 
-__all__ = ['resolver']
+__all__ = ['Resolver']

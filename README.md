@@ -7,7 +7,7 @@ Example
 Suppose you have a `Blog`-class and an `Author`-class. For modularity, each have their own property resolvers. However, when you request a blog's author, the API call doesn't just return the `id`, but also some other information, which you don't want going to waste. So you do this:
 
 ```python
-from graphdataloader import resolver
+from graphdataloader import Resolver
 from external import get_blogs, get_authors
 
 
@@ -15,8 +15,8 @@ class Blog:
     def __init__(self, id):
         self.id = id
 
-    title = resolver()
-    author = resolver()
+    title = Resolver()
+    author = Resolver()
 
     @classmethod
     async def batch_load_fn(cls, obj_to_attr_names):
@@ -45,8 +45,8 @@ class Author:
     def __init__(self, id):
         self.id = id
 
-    name = resolver()
-    rating = resolver()
+    name = Resolver()
+    rating = Resolver()
 
     @classmethod
     async def batch_load_fn(cls, obj_to_attr_names):
