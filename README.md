@@ -19,11 +19,11 @@ class Blog:
     author = Resolver()
 
     @classmethod
-    async def batch_load_fn(cls, obj_to_attr_names):
+    async def batch_load_fn(cls, calls):
         documents = await get_blogs(
-            {obj.id for obj in obj_to_attr_names},
-            include_titles=any('title' in attr_names for attr_names in obj_to_attr_names.values()),
-            include_authors=any('author' in attr_names for attr_names in obj_to_attr_names.values())
+            {obj.id for obj, attr_name, args in calls},
+            include_titles=any(attr_name == 'title' for obj, attr_name, args in calls.values()),
+            include_authors=any(attr_name == 'author' for obj, attr_name, args in calls.values())
         )
         for document in documents:
             blog = cls(document['id'])
@@ -49,8 +49,8 @@ class Author:
     rating = Resolver()
 
     @classmethod
-    async def batch_load_fn(cls, obj_to_attr_names):
-        documents = await get_authors({obj.id for obj in obj_to_attr_names})
+    async def batch_load_fn(cls, calls):
+        documents = await get_authors({obj.id for obj, attr_name, args in calls})
         for document in documents:
             author = cls(document['id'])
             author.name.resolve(document['name'])

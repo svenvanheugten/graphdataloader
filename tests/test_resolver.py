@@ -6,7 +6,7 @@ from graphdataloader import Resolver
 
 class TestResolver(asynctest.TestCase):
     async def test(self):
-        class Test:
+        class Post:
             call_count = 0
 
             def __init__(self, id):
@@ -14,15 +14,20 @@ class TestResolver(asynctest.TestCase):
 
             name = Resolver(lambda cls: cls.batch_load_fn)
             description = Resolver(lambda cls: cls.batch_load_fn)
+            comments = Resolver(lambda cls: cls.batch_load_fn)
 
             @classmethod
-            async def batch_load_fn(cls, obj_to_attr_names):
+            async def batch_load_fn(cls, calls):
                 cls.call_count += 1
-                for obj, attr_names in obj_to_attr_names.items():
+                for obj, attr_names, kwargs in calls:
                     if 'name' in attr_names:
                         obj.name.resolve('Post ' + str(obj.id))
                     if 'description' in attr_names:
                         obj.description.resolve('About ' + str(obj.id))
+                    if 'comments' in attr_names:
+                        obj.comments \
+                            .with_arguments(count=kwargs['count']) \
+                            .resolve(list(range(kwargs['count'])))
 
             def __eq__(self, other):
                 return self.id == other.id
@@ -38,7 +43,10 @@ class TestResolver(asynctest.TestCase):
             self.assertEqual(
                 await obj.description(), 'About ' + str(obj.id)
             )
+            self.assertEqual(
+                await obj.comments(count=10), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+            )
 
-        await asyncio.gather(verify(Test(0)), verify(Test(1)))
+        await asyncio.gather(verify(Post(0)), verify(Post(1)))
 
-        self.assertEqual(Test.call_count, 2)
+        self.assertEqual(Post.call_count, 3)

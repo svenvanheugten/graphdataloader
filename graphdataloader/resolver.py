@@ -1,3 +1,4 @@
+from frozendict import frozendict
 from asyncio import get_event_loop, ensure_future
 
 
@@ -18,37 +19,53 @@ class Resolver:
         if not hasattr(objtype, '_queues'):
             objtype._queues = {}
         if batch_load_fn not in objtype._queues:
-            objtype._queues[batch_load_fn] = {}
+            objtype._queues[batch_load_fn] = set()
         queue = objtype._queues[batch_load_fn]
 
         async def dispatch_queue():
-            old_queue = dict(queue)
+            old_queue = set(queue)
             queue.clear()
             await batch_load_fn(old_queue)
+            assert all(
+                self.__futures[(obj, arguments)].done()
+                for obj, attr_name, arguments in old_queue
+            ), "Not everything was resolved."
 
-        def resolve(value):
-            if obj not in self.__futures:
-                self.__futures[obj] = get_event_loop().create_future()
-            future = self.__futures[obj]
+        def do_resolve(identity, value):
+            if identity not in self.__futures:
+                self.__futures[identity] = get_event_loop().create_future()
+            future = self.__futures[identity]
             if not future.done():
                 if isinstance(value, Exception):
                     future.set_exception(value)
                 else:
                     future.set_result(value)
 
-        def fn(*args, **kwargs):
+        def with_arguments(**kwargs):
+            def resolvable():
+                pass
+            resolvable.resolve = lambda value: do_resolve(
+                (obj, frozendict(kwargs)),
+                value
+            )
+            return resolvable
+
+        def fn(**kwargs):
+            arguments = frozendict(kwargs)
+            identity = (obj, arguments)
             queue_was_empty = len(queue) == 0
-            if obj not in self.__futures:
-                self.__futures[obj] = get_event_loop().create_future()
-                queue.setdefault(obj, set()).add(self.name)
+            if identity not in self.__futures:
+                self.__futures[identity] = get_event_loop().create_future()
+                queue.add((obj, self.name, arguments))
                 if queue_was_empty:
                     get_event_loop().call_soon(
                         ensure_future,
                         dispatch_queue()
                     )
-            return self.__futures[obj]
+            return self.__futures[identity]
 
-        fn.resolve = resolve
+        fn.with_arguments = with_arguments
+        fn.resolve = lambda value: with_arguments().resolve(value)
 
         return fn
 
