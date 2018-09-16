@@ -5,7 +5,7 @@ from graphdataloader import Resolver
 
 
 class TestResolver(asynctest.TestCase):
-    async def test(self):
+    async def test_get(self):
         class Post:
             call_count = 0
 
@@ -50,3 +50,32 @@ class TestResolver(asynctest.TestCase):
         await asyncio.gather(verify(Post(0)), verify(Post(1)))
 
         self.assertEqual(Post.call_count, 3)
+
+    async def test_set(self):
+        class Post:
+            def __init__(self, id):
+                self.id = id
+                self.setter_call_count = 0
+
+            name = Resolver(lambda cls: cls.batch_load_fn, lambda self: self.__set_name)
+
+            @classmethod
+            async def batch_load_fn(cls, calls):
+                for obj, attr_names, kwargs in calls:
+                    if 'name' in attr_names:
+                        obj.name.resolve('Post ' + str(obj.id))
+
+            async def __set_name(self, value):
+                self.setter_call_count += 1
+
+            def __eq__(self, other):
+                return self.id == other.id
+
+            def __hash__(self):
+                return hash(self.id)
+
+        post = Post(0)
+        self.assertEqual(await post.name(), 'Post 0')
+        await post.name.set('Changed')
+        self.assertEqual(await post.name(), 'Changed')
+        self.assertEqual(post.setter_call_count, 1)

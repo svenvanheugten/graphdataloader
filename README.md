@@ -64,3 +64,29 @@ class Author:
 ```
 
 Now, getting a `Blog`'s author and then getting the author's name does just one request. Only if you also get the author's rating, a second request goes out.
+
+Mutations
+---------
+If you specify a setter on a `Resolver`, you can use `.set(value)` to update both the cache and call your setter function:
+
+```python
+from external import update_post
+
+class Post:
+    def __init__(self, id):
+        self.id = id
+
+    name = Resolver(lambda cls: cls.batch_load_fn, lambda self: self.__set_name)
+
+    async def __set_name(self, value):
+        await update_post(self.id, value)
+
+    def __eq__(self, other):
+        return self.id == other.id
+
+    def __hash__(self):
+        return hash(self.id)
+
+post = Post(0)
+await post.name.set('New post name')
+```

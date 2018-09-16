@@ -3,9 +3,10 @@ from asyncio import get_event_loop, ensure_future
 
 
 class Resolver:
-    def __init__(self, get_batch_load_fn):
+    def __init__(self, get_batch_load_fn, get_setter_fn=None):
         self.__futures = {}
         self.__get_batch_load_fn = get_batch_load_fn
+        self.__get_setter_fn = get_setter_fn
 
     def __set_name__(self, owner, name):
         self.name = name
@@ -32,14 +33,13 @@ class Resolver:
             ), "Not everything was resolved."
 
         def do_resolve(identity, value):
-            if identity not in self.__futures:
+            if identity not in self.__futures or self.__futures[identity].done():
                 self.__futures[identity] = get_event_loop().create_future()
             future = self.__futures[identity]
-            if not future.done():
-                if isinstance(value, Exception):
-                    future.set_exception(value)
-                else:
-                    future.set_result(value)
+            if isinstance(value, Exception):
+                future.set_exception(value)
+            else:
+                future.set_result(value)
 
         def with_arguments(**kwargs):
             def resolvable():
@@ -66,6 +66,13 @@ class Resolver:
 
         fn.with_arguments = with_arguments
         fn.resolve = lambda value: with_arguments().resolve(value)
+
+        if self.__get_setter_fn:
+            async def setter(value):
+                fn.resolve(value)
+                await self.__get_setter_fn(obj)(value)
+
+            fn.set = setter
 
         return fn
 
